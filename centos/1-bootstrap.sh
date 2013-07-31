@@ -16,21 +16,21 @@ fi
 apt-get install -qq lxc curl yum -y --force-yes
 sudo wget -q -O /usr/share/lxc/templates/lxc-centos https://gist.github.com/hagix9/3514296/raw/7f6bb4e291fad1dad59a49a5c02f78642bb99a45/lxc-centos
 sudo chmod 755 /usr/share/lxc/templates/lxc-centos
-sudo MIRROR=http://ftp.jaist.ac.jp/pub/Linux/CentOS/6.4/os/x86_64/ lxc-create -t centos -n centos0
+sudo MIRROR=http://ftp.jaist.ac.jp/pub/Linux/CentOS/6.4/os/x86_64/ lxc-create -t centos-vagrant -n centos0
 
 ## Configure the vagrant user
-chroot ${ROOTFS} useradd --create-home -s /bin/bash vagrant
-echo -n 'vagrant:vagrant' | chroot ${ROOTFS} chpasswd
-mkdir ${ROOTFS}/home/vagrant/.ssh
-wget -q https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub \
-    -O ${ROOTFS}/home/vagrant/.ssh/authorized_keys
-chroot ${ROOTFS} chown -R vagrant:vagrant /home/vagrant
+#chroot ${ROOTFS} useradd --create-home -s /bin/bash vagrant
+#echo -n 'vagrant:vagrant' | chroot ${ROOTFS} chpasswd
+#mkdir ${ROOTFS}/home/vagrant/.ssh
+#wget -q https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub \
+#    -O ${ROOTFS}/home/vagrant/.ssh/authorized_keys
+#chroot ${ROOTFS} chown -R vagrant:vagrant /home/vagrant
 
 ## Set up SSH access and passwordless sudo
-cp -p ${ROOTFS}/etc/sudoers ${ROOTFS}/etc/sudoers.orig
-sed -i -e \
-      's/^# \(%wheel.*NOPASSWD\)/\1/g' \
-      ${ROOTFS}/etc/sudoers
+#cp -p ${ROOTFS}/etc/sudoers ${ROOTFS}/etc/sudoers.orig
+#sed -i -e \
+#      's/^# \(%wheel.*NOPASSWD\)/\1/g' \
+#      ${ROOTFS}/etc/sudoers
 
 ### Add some basic packages
 PACKAGES="curl wget"

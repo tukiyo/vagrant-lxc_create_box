@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ROOTFS=/var/lib/lxc/ubuntu0/rootfs
 LXCTARGET=ubuntu0
 RELEASE=raring
@@ -14,16 +13,10 @@ fi
 
 ## Bootstrapping the guest container rootfs
 apt-get install -qq lxc -y --force-yes
-MIRROR=http://jp.archive.ubuntu.com/ubuntu lxc-create -t ubuntu -n $LXCTARGET
+MIRROR=http://jp.archive.ubuntu.com/ubuntu lxc-create -t ubuntu-vagrant -n $LXCTARGET
 
 ## Configure the vagrant user
 chroot ${ROOTFS} apt-get install -qq -y --force-yes
-
-## Set up SSH access and passwordless sudo
-cp -p ${ROOTFS}/etc/sudoers ${ROOTFS}/etc/sudoers.orig
-sed -i -e \
-      's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%ALL=NOPASSWD:ALL/g' \
-      ${ROOTFS}/etc/sudoers
 
 ### Add some basic packages
 PACKAGES="curl wget"

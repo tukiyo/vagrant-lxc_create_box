@@ -382,6 +382,29 @@ EOF
     return 0
 }
 
+vagrant_configuration() {
+    echo "[start] vagrant_configuration"
+    rootfs_path=$1
+
+    ## Configure the vagrant user
+    chroot ${rootfs_path} useradd vagrant -s /bin/bash
+    chroot ${rootfs_path} adduser vagrant sudo
+    echo -n 'vagrant:vagrant' | chroot ${rootfs_path} chpasswd
+    mkdir -p ${rootfs_path}/home/vagrant/.ssh
+    wget -q https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub \
+        -O ${rootfs_path}/home/vagrant/.ssh/authorized_keys
+    chroot ${rootfs_path} chown -R vagrant:vagrant /home/vagrant
+
+    ## set sudo nopasswd
+    cp -p ${rootfs_path}/etc/sudoers ${rootfs_path}/etc/sudoers.orig
+    sed -i -e \
+        's@%sudo\s*ALL=(ALL:ALL) ALL@%sudo     ALL=NOPASSWD:ALL@' \
+        ${rootfs_path}/etc/sudoers
+    echo "[end] vagrant_configuration"
+
+    return 0
+}
+
 trim()
 {
     rootfs=$1
@@ -713,6 +736,8 @@ if [ $? -ne 0 ]; then
     echo "failed write configuration file"
     exit 1
 fi
+
+vagrant_configuration $rootfs
 
 post_process $rootfs $release $trim_container
 
