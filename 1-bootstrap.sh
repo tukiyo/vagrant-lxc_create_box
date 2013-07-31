@@ -1,6 +1,7 @@
 ROOTFS=/var/lib/lxc/ubuntu0/rootfs
 LXCTARGET=ubuntu0
 RELEASE=raring
+VENDOR_URL="https://raw.github.com/tukiyo/vagrant-lxc_create_box/master/vendor"
 
 if [ "$USER" != "root" ];then
     echo "[quit] please execute by root user."
@@ -37,7 +38,8 @@ PACKAGES="curl wget"
 chroot ${ROOTFS} apt-get install -qq $PACKAGES -y --force-yes
 
 ### install Chef
-chroot ${ROOTFS} curl -L https://www.opscode.com/chef/install.sh -k \
+#chroot ${ROOTFS} curl -L https://www.opscode.com/chef/install.sh -k \
+chroot ${ROOTFS} curl -L $VENDOR_URL/www.opscode.com/chef/install.sh -k \
       | bash
 
 
@@ -57,9 +59,12 @@ sudo tar --numeric-owner -czf /tmp/vagrant-lxc-${RELEASE}/rootfs.tar.gz ./rootfs
 ## Prepare package contents
 cd /tmp/vagrant-lxc-${RELEASE}
 sudo chown $USER:$USER rootfs.tar.gz
-wget -q https://raw.github.com/fgrehm/vagrant-lxc/master/boxes/common/lxc-template
-wget -q https://raw.github.com/fgrehm/vagrant-lxc/master/boxes/common/lxc.conf
-wget -q https://raw.github.com/fgrehm/vagrant-lxc/master/boxes/common/metadata.json
+#wget -q https://raw.github.com/fgrehm/vagrant-lxc/master/boxes/common/lxc-template
+#wget -q https://raw.github.com/fgrehm/vagrant-lxc/master/boxes/common/lxc.conf
+#wget -q https://raw.github.com/fgrehm/vagrant-lxc/master/boxes/common/metadata.json
+wget -q $VENDOR_URL/fgrehm/lxc-template
+wget -q $VENDOR_URL/fgrehm/lxc.conf
+wget -q $VENDOR_URL/fgrehm/metadata.json
 chmod +x lxc-template
 
 ## Vagrant box!
