@@ -4,10 +4,10 @@ if [ "$USER" = "root" ];then
     exit 0
 fi
 
-RELEASE=raring
+RELEASE=centos64
 
 mkdir -p ~/local/vagrant/${RELEASE} && cd ~/local/vagrant/${RELEASE}
-vagrant init my-box $HOME/vagrant-lxc-${RELEASE}.box
+vagrant init my-centos $HOME/vagrant-lxc-${RELEASE}.box
 vagrant up --provider=lxc
-vagrant ssh -c "sudo chown -R vagrant:vagrant /home/vagrant"
+#vagrant ssh -c "sudo chown -R vagrant:vagrant /home/vagrant"
 vagrant ssh
