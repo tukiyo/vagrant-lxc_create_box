@@ -1,3 +1,4 @@
+#!/bin/sh
 if [ "$USER" = "root" ];then
     echo "[quit] please execute by normal user."
     exit 0
@@ -8,4 +9,5 @@ RELEASE=raring
 mkdir -p ~/local/vagrant/${RELEASE} && cd ~/local/vagrant/${RELEASE}
 vagrant init my-box $HOME/vagrant-lxc-${RELEASE}.box
 vagrant up --provider=lxc
+vagrant ssh -c "sudo chown -R vagrant:vagrant /home/vagrant"
 vagrant ssh

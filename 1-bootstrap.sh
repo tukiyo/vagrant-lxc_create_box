@@ -1,3 +1,5 @@
+#!/bin/sh
+
 ROOTFS=/var/lib/lxc/ubuntu0/rootfs
 LXCTARGET=ubuntu0
 RELEASE=raring
@@ -15,16 +17,7 @@ apt-get install -qq lxc -y --force-yes
 MIRROR=http://jp.archive.ubuntu.com/ubuntu lxc-create -t ubuntu -n $LXCTARGET
 
 ## Configure the vagrant user
-chroot ${ROOTFS} useradd --create-home -s /bin/bash vagrant
-echo -n 'vagrant:vagrant' | chroot ${ROOTFS} chpasswd
 chroot ${ROOTFS} apt-get install -qq -y --force-yes
-chroot ${ROOTFS} adduser vagrant sudo
-echo 'test "$(find .ssh -uid 0)" != "" && chown -R $USER:$USER $HOME' \
-  > ${ROOTFS}/home/vagrant/.profile
-mkdir ${ROOTFS}/home/vagrant/.ssh
-wget -q https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub \
-    -O ${ROOTFS}/home/vagrant/.ssh/authorized_keys
-chroot ${ROOTFS} chown -R vagrant:vagrant /home/vagrant
 
 ## Set up SSH access and passwordless sudo
 cp -p ${ROOTFS}/etc/sudoers ${ROOTFS}/etc/sudoers.orig
@@ -32,15 +25,14 @@ sed -i -e \
       's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%ALL=NOPASSWD:ALL/g' \
       ${ROOTFS}/etc/sudoers
 
-
 ### Add some basic packages
 PACKAGES="curl wget"
 chroot ${ROOTFS} apt-get install -qq $PACKAGES -y --force-yes
 
 ### install Chef
 #chroot ${ROOTFS} curl -L https://www.opscode.com/chef/install.sh -k \
-chroot ${ROOTFS} curl -L $VENDOR_URL/www.opscode.com/chef/install.sh -k \
-      | bash
+#chroot ${ROOTFS} curl -L $VENDOR_URL/www.opscode.com/chef/install.sh -k \
+#      | bash
 
 
 ## Free up some disk space

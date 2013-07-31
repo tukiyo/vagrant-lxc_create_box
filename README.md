@@ -5,6 +5,7 @@ vagrant-lxc_create_box
 ----
 
 * execute root user.
+* create $HOME/vagrant-lxc-${RELEASE}.box
 
 
 2-box-start.sh
