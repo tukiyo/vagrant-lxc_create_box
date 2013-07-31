@@ -75,10 +75,10 @@ EOF
         rm -f $rootfs/etc/init/tty{5,6}.conf
     fi
 
-    if [ -z "$bindhome" ]; then
-        chroot $rootfs useradd --create-home -s /bin/bash ubuntu
-        echo "ubuntu:ubuntu" | chroot $rootfs chpasswd
-    fi
+    #if [ -z "$bindhome" ]; then
+    #    chroot $rootfs useradd --create-home -s /bin/bash ubuntu
+    #    echo "ubuntu:ubuntu" | chroot $rootfs chpasswd
+    #fi
 
     # make sure we have the current locale defined in the container
     if [ -z "$LANG" ]; then
