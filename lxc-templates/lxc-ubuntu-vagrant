@@ -405,6 +405,25 @@ vagrant_configuration() {
     return 0
 }
 
+custom_configuration() {
+    echo "[start] custom_configuration"
+    rootfs_path=$1
+
+    cp ${rootfs_path}/usr/share/zoneinfo/Asia/Tokyo ${rootfs_path}/etc/localtime
+    echo Asia/Tokyo > ${rootfs_path}/etc/timezone
+
+    DOTFILE_URL=https://raw.github.com/tukiyo/vagrant-lxc_create_box/master/vendor/dotfiles
+    wget -q $DOTFILE_URL/.vimrc   -O ${rootfs_path}/home/vagrant/.vimrc
+    wget -q $DOTFILE_URL/.profile -O ${rootfs_path}/home/vagrant/.profile
+    wget -q $DOTFILE_URL/.bashrc  -O ${rootfs_path}/home/vagrant/.bashrc
+
+    PACKAGES="bash-completion"
+    chroot $rootfs apt-get install --force-yes -y $PACKAGES
+
+    chroot ${rootfs_path} chown -R vagrant:vagrant /home/vagrant
+    echo "[end] custom_configuration"
+}
+
 trim()
 {
     rootfs=$1
@@ -738,6 +757,7 @@ if [ $? -ne 0 ]; then
 fi
 
 vagrant_configuration $rootfs
+custom_configuration $rootfs
 
 post_process $rootfs $release $trim_container
 
