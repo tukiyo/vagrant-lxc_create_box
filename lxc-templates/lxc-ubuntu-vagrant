@@ -412,13 +412,13 @@ custom_configuration() {
     cp ${rootfs_path}/usr/share/zoneinfo/Asia/Tokyo ${rootfs_path}/etc/localtime
     echo Asia/Tokyo > ${rootfs_path}/etc/timezone
 
-    DOTFILE_URL=https://raw.github.com/tukiyo/vagrant-lxc_create_box/master/vendor/dotfiles
+    DOTFILE_URL=https://raw.github.com/tukiyo/vagrant-lxc_create_box/master/ubuntu/dotfiles
     wget -q $DOTFILE_URL/.vimrc   -O ${rootfs_path}/home/vagrant/.vimrc
     wget -q $DOTFILE_URL/.profile -O ${rootfs_path}/home/vagrant/.profile
     wget -q $DOTFILE_URL/.bashrc  -O ${rootfs_path}/home/vagrant/.bashrc
 
-    PACKAGES="bash-completion"
-    chroot $rootfs apt-get install --force-yes -y $PACKAGES
+    PACKAGES="bash-completion ack-grep"
+    chroot $rootfs apt-get install --force-yes -y -q $PACKAGES
 
     chroot ${rootfs_path} chown -R vagrant:vagrant /home/vagrant
     echo "[end] custom_configuration"
