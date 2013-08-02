@@ -33,7 +33,7 @@ sudo MIRROR=http://ftp.jaist.ac.jp/pub/Linux/CentOS/6.4/os/x86_64/ lxc-create -t
 #      ${ROOTFS}/etc/sudoers
 
 ### Add some basic packages
-PACKAGES="curl wget"
+PACKAGES="curl wget which vim-enhanced"
 chroot ${ROOTFS} yum install $PACKAGES -y -q
 
 ### install Chef

@@ -146,6 +146,7 @@ vagrant_configuration()
     ## Configure the vagrant user
     chroot ${rootfs_path} useradd --create-home -s /bin/bash vagrant
     echo -n 'vagrant:vagrant' | chroot ${rootfs_path} chpasswd
+    chroot ${rootfs_path} usermod -a -G wheel vagrant
     mkdir ${rootfs_path}/home/vagrant/.ssh
     wget -q https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub \
         -O ${rootfs_path}/home/vagrant/.ssh/authorized_keys
@@ -157,6 +158,12 @@ vagrant_configuration()
 
     echo "[end] vagrant_configuration"
     return 0
+}
+
+custom_configuration() {
+    echo "[start] custom_configuration"
+    cp ${rootfs_path}/usr/share/zoneinfo/Asia/Tokyo ${rootfs_path}/etc/localtime
+    echo "[end] custom_configuration"
 }
 
 download_centos()
@@ -467,6 +474,7 @@ if [ $? -ne 0 ]; then
 fi
 
 vagrant_configuration
+custom_configuration
 
 if [ ! -z $clean ]; then
     clean || exit 1
