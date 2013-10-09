@@ -109,6 +109,7 @@ EOF
 custom_configuration() {
     echo "[start] custom_configuration"
     chroot ${rootfs_path} yum -y install vim-enhanced openssh-clients curl wget screen nkf sudo
+    chroot ${rootfs_path} chkconfig gpm off
     cp ${rootfs_path}/usr/share/zoneinfo/Asia/Tokyo ${rootfs_path}/etc/localtime
     sed -i -e 's/^# \(%wheel.*NOPASSWD\)/\1/g' ${rootfs_path}/etc/sudoers
     echo "[end] custom_configuration"
