@@ -1,0 +1,291 @@
+#!/bin/bash
+
+#
+# template script for generating CentOS container for LXC
+#
+
+#
+# lxc: linux Container library
+
+# Authors:
+# Daniel Lezcano <daniel.lezcano@free.fr>
+# Ramez Hanna <rhanna@informatiq.org>
+
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+
+#Configurations
+arch=$(arch)
+release=5
+cache_base=/var/cache/lxc/centos/$arch
+default_path=/var/lib/lxc
+root_password=password
+
+# 32bit
+if [ "$arch" = "i686" ]; then
+    arch=i386
+fi
+# 64bit
+if [ "$arch" = "x86_64" ]; then
+    arch=amd64
+fi
+
+configure_centos()
+{
+
+    # disable selinux in centos
+    mkdir -p $rootfs_path/selinux
+    echo 0 > $rootfs_path/selinux/enforce
+
+   # configure the network using the dhcp
+    cat <<EOF > ${rootfs_path}/etc/sysconfig/network-scripts/ifcfg-eth0
+DEVICE=eth0
+BOOTPROTO=dhcp
+ONBOOT=yes
+TYPE=Ethernet
+USERCTL=yes
+PEERDNS=yes
+IPV6INIT=no
+DHCP_HOSTNAME="$(if [ -x /etc/hostname ] && [ ! -z `cat /etc/hostname` ] ; then cat /etc/hostname ; else hostname ; fi )"
+EOF
+
+    # set the dns
+    cat > ${rootfs_path}/etc/resolv.conf << END
+# Google public DNS
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+END
+
+
+    # set the hostname
+    cat <<EOF > ${rootfs_path}/etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=${name}
+EOF
+
+    # set minimal hosts
+    cat <<EOF > $rootfs_path/etc/hosts
+127.0.0.1 localhost $name
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+EOF
+
+    cat <<EOF > $rootfs_path/etc/rc.d/lxc.sysinit
+#! /bin/sh
+rm -f /etc/mtab /var/run/*.{pid,lock} /var/lock/subsys/*
+rm -rf {/,/var}/tmp/* 
+echo "/dev/root               /                       rootfs   defaults        0 0" > /etc/mtab
+exit 0
+EOF
+     chmod +x $rootfs_path/etc/rc.d/lxc.sysinit
+
+    sed -i 's/rc.sysinit/lxc.sysinit/g' ${rootfs_path}/etc/inittab
+    sed -i 's/^[0-9]/#\0/g' ${rootfs_path}/etc/inittab
+
+    echo '' >> ${rootfs_path}/etc/inittab
+    echo '1:2345:respawn:/sbin/agetty 38400 console' >> ${rootfs_path}/etc/inittab 
+    echo 'c1:2345:respawn:/sbin/agetty 38400 tty1 linux' >> ${rootfs_path}/etc/inittab
+
+    dev_path="${rootfs_path}/dev"
+    rm -rf $dev_path
+    mkdir -p $dev_path
+    mknod -m 666 ${dev_path}/null c 1 3
+    mknod -m 666 ${dev_path}/zero c 1 5
+    mknod -m 666 ${dev_path}/random c 1 8
+    mknod -m 666 ${dev_path}/urandom c 1 9
+    mkdir -m 755 ${dev_path}/pts
+    mkdir -m 1777 ${dev_path}/shm
+    mknod -m 666 ${dev_path}/tty c 5 0
+    mknod -m 666 ${dev_path}/tty0 c 4 0
+    mknod -m 666 ${dev_path}/tty1 c 4 1
+    mknod -m 666 ${dev_path}/tty2 c 4 2
+    mknod -m 666 ${dev_path}/tty3 c 4 3
+    mknod -m 666 ${dev_path}/tty4 c 4 4
+    mknod -m 600 ${dev_path}/console c 5 1
+    mknod -m 666 ${dev_path}/full c 1 7
+    mknod -m 600 ${dev_path}/initctl p
+    mknod -m 666 ${dev_path}/ptmx c 5 2
+
+    echo "setting root passwd to $root_password"
+    echo "root:$root_password" | chroot $rootfs_path chpasswd
+
+    touch ${rootfs_path}/etc/fstab
+
+    chroot ${rootfs_path} yum -y install passwd openssh-server openssh
+
+#    chroot ${rootfs_path} chkconfig udev-post off
+    chroot ${rootfs_path} chkconfig iscsi off
+    chroot ${rootfs_path} chkconfig iscsid off
+    chroot ${rootfs_path} chkconfig network on
+    chroot ${rootfs_path} chkconfig sshd on
+    chroot ${rootfs_path} chkconfig rsyslog on
+
+    return 0
+}
+
+vagrant_configuration()
+{
+    echo "[start] vagrant_configuration"
+    ## Configure the vagrant user
+    chroot ${rootfs_path} useradd --create-home -s /bin/bash vagrant
+    echo -n 'vagrant:vagrant' | chroot ${rootfs_path} chpasswd
+    chroot ${rootfs_path} usermod -a -G wheel vagrant
+    mkdir ${rootfs_path}/home/vagrant/.ssh
+    wget -q https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub \
+        -O ${rootfs_path}/home/vagrant/.ssh/authorized_keys
+    chroot ${rootfs_path} chown -R vagrant:vagrant /home/vagrant
+
+    ## set sudo nopasswd
+    cp -p ${rootfs_path}/etc/sudoers ${rootfs_path}/etc/sudoers.orig
+    sed -i -e 's/^# \(%wheel.*NOPASSWD\)/\1/g' ${rootfs_path}/etc/sudoers
+
+    echo "[end] vagrant_configuration"
+    return 0
+}
+
+custom_configuration() {
+    echo "[start] custom_configuration"
+    cp ${rootfs_path}/usr/share/zoneinfo/Asia/Tokyo ${rootfs_path}/etc/localtime
+    echo "[end] custom_configuration"
+}
+
+
+install_centos()
+{
+
+    # check the mini centos was not already downloaded
+    mkdir -p $rootfs_path
+    if [ $? -ne 0 ]; then
+        echo "Failed to create '$rootfs_path' directory"
+        return 1
+    fi
+
+    dev_path="${rootfs_path}/dev"
+    mkdir -p $dev_path
+    mknod -m 666 ${dev_path}/urandom c 1 9
+
+    rinse --directory=$rootfs_path --distribution=centos-$release --arch=$arch
+
+    return 0
+}
+
+copy_configuration()
+{
+
+    mkdir -p $config_path
+    cat <<EOF >> $config_path/config
+lxc.network.ipv4 = 0.0.0.0/24
+lxc.utsname = $name
+lxc.tty = 4
+lxc.pts = 1024
+lxc.rootfs = $rootfs_path
+lxc.mount  = $config_path/fstab
+
+# uncomment the next line to run the container unconfined:
+#lxc.aa_profile = unconfined
+
+#cgroups
+lxc.cgroup.devices.deny = a
+# /dev/null and zero
+lxc.cgroup.devices.allow = c 1:3 rwm
+lxc.cgroup.devices.allow = c 1:5 rwm
+# consoles
+lxc.cgroup.devices.allow = c 5:1 rwm
+lxc.cgroup.devices.allow = c 5:0 rwm
+lxc.cgroup.devices.allow = c 4:0 rwm
+lxc.cgroup.devices.allow = c 4:1 rwm
+# /dev/{,u}random
+lxc.cgroup.devices.allow = c 1:9 rwm
+lxc.cgroup.devices.allow = c 1:8 rwm
+lxc.cgroup.devices.allow = c 136:* rwm
+lxc.cgroup.devices.allow = c 5:2 rwm
+# rtc
+lxc.cgroup.devices.allow = c 254:0 rwm
+EOF
+
+    cat <<EOF > $config_path/fstab
+none $rootfs_path/dev/pts devpts defaults 0 0
+none $rootfs_path/proc    proc   defaults 0 0
+none $rootfs_path/sys     sysfs  defaults 0 0
+none $rootfs_path/dev/shm tmpfs  defaults 0 0
+EOF
+    if [ $? -ne 0 ]; then
+        echo "Failed to add configuration"
+        return 1
+    fi
+
+    return 0
+}
+
+options=$(getopt -o hp:n:cR:m: -l help,path:,name:,clean,release:,releaseminor,rootfs: -- "$@")
+if [ $? -ne 0 ]; then
+    usage $(basename $0)
+    exit 1
+fi
+eval set -- "$options"
+
+while true
+do
+    case "$1" in
+  -h|--help)      usage $0 && exit 0;;
+  -p|--path)      path=$2; shift 2;;
+  -n|--name)      name=$2; shift 2;;
+  --)             shift 1; break ;;
+        *)              break ;;
+    esac
+done
+
+if [ "$(id -u)" != "0" ]; then
+    echo "This script should be run as 'root'"
+    exit 1
+fi
+
+rootfs_path=$path/rootfs
+config_path=$default_path/$name
+cache=$cache_base/$release
+
+revert()
+{
+    echo "Interrupted, so cleaning up"
+    lxc-destroy -n $name
+    # maybe was interrupted before copy config
+    rm -rf $path/$name
+    rm -rf $default_path/$name
+    echo "exiting..."
+    exit 1
+}
+
+trap revert SIGHUP SIGINT SIGTERM
+
+copy_configuration
+if [ $? -ne 0 ]; then
+    echo "failed write configuration file"
+    exit 1
+fi
+
+install_centos
+if [ $? -ne 0 ]; then
+    echo "failed to install centos"
+    exit 1
+fi
+
+configure_centos
+if [ $? -ne 0 ]; then
+    echo "failed to configure centos for a container"
+    exit 1
+fi
+
+vagrant_configuration
+custom_configuration
+
+echo "container rootfs and config created"

@@ -35,8 +35,13 @@ root_password=password
 # is this centos?
 [ -f /etc/redhat-release ] && is_centos=true
 
+# 32bit
 if [ "$arch" = "i686" ]; then
     arch=i386
+fi
+# 64bit
+if [ "$arch" = "x86_64" ]; then
+    arch=amd64
 fi
 
 configure_centos()
@@ -118,19 +123,6 @@ EOF
     echo "setting root passwd to $root_password"
     echo "root:$root_password" | chroot $rootfs_path chpasswd
 
-    # specifying this in the initial packages doesn't always work.
-#    echo "installing centos-release package"
-#    if [ ! -f ${rootfs_path}/etc/resolv.conf ]; then
-#      cp /etc/resolv.conf ${rootfs_path}/etc/resolv.conf
-#      remove_resolv=1
-#    fi
-#    chroot ${rootfs_path} rpm --rebuilddb
-#    chroot ${rootfs_path} yum --releasever=${release} -y install centos-release
-#    if [ ! -z $remove_resolv ]; then
-#      rm ${rootfs_path}/etc/resolv.conf
-#    fi
-
-    # silence some needless startup errors
     touch ${rootfs_path}/etc/fstab
 
     # give us a console on /dev/console
@@ -290,6 +282,7 @@ copy_configuration()
 
     mkdir -p $config_path
     cat <<EOF >> $config_path/config
+lxc.network.ipv4 = 0.0.0.0/24
 lxc.utsname = $name
 lxc.tty = 4
 lxc.pts = 1024
@@ -323,8 +316,8 @@ proc            proc         proc    nodev,noexec,nosuid 0 0
 sysfs           sys          sysfs defaults  0 0
 EOF
     if [ $? -ne 0 ]; then
-  echo "Failed to add configuration"
-  return 1
+        echo "Failed to add configuration"
+        return 1
     fi
 
     return 0
@@ -436,7 +429,6 @@ if [ "$(id -u)" != "0" ]; then
     echo "This script should be run as 'root'"
     exit 1
 fi
-
 
 rootfs_path=$path/rootfs
 config_path=$default_path/$name
