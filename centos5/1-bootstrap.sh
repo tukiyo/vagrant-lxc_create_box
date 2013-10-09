@@ -1,7 +1,6 @@
 #!/bin/sh
 
 set -e
-set -x
 
 ROOTFS=/var/lib/lxc/centos5/rootfs
 LXCTARGET=centos5
@@ -22,7 +21,7 @@ sudo chmod +x /usr/share/lxc/templates/lxc-centos5-vagrant
 sudo MIRROR=http://ftp.jaist.ac.jp/pub/Linux/CentOS/5.9/os/x86_64/ lxc-create -t centos5-vagrant -n centos5
 
 ### Add some basic packages
-PACKAGES="curl wget which vim-enhanced"
+PACKAGES="curl wget which vim-enhanced sudo"
 chroot ${ROOTFS} yum install $PACKAGES -y -q
 
 # ----------------------------------------------------------------------

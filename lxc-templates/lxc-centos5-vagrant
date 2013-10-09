@@ -30,7 +30,7 @@ arch=$(arch)
 release=5
 cache_base=/var/cache/lxc/centos/$arch
 default_path=/var/lib/lxc
-root_password=password
+root_password=root
 
 # 32bit
 if [ "$arch" = "i686" ]; then
