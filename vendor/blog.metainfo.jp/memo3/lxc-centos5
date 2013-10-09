@@ -94,7 +94,7 @@ EOF
 
     touch ${rootfs_path}/etc/fstab
 
-    chroot ${rootfs_path} yum -y install passwd openssh-server openssh
+    chroot ${rootfs_path} yum -y install passwd openssh-server openssh sudo
 
 #    chroot ${rootfs_path} chkconfig udev-post off
     chroot ${rootfs_path} chkconfig iscsi off
@@ -104,6 +104,12 @@ EOF
     chroot ${rootfs_path} chkconfig rsyslog on
 
     return 0
+}
+
+custom_configuration() {
+    echo "[start] custom_configuration"
+    cp ${rootfs_path}/usr/share/zoneinfo/Asia/Tokyo ${rootfs_path}/etc/localtime
+    echo "[end] custom_configuration"
 }
 
 install_centos()
@@ -229,5 +235,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+custom_configuration
 
 echo "container rootfs and config created"
